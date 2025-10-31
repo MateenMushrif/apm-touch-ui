@@ -917,3 +917,63 @@ function blockEventIfActive(e) {
 ['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
     document.addEventListener(evt, resetScreensaverTimer, { passive: true });
 });
+
+
+/* ==============================================================
+   DISABLE LONG-PRESS & RIGHT-CLICK (GLOBAL)
+   ============================================================== */
+(() => {
+    // 1. Prevent the default context menu (right-click or long-press)
+    const preventCtx = (e) => {
+        e.preventDefault();
+        return false;
+    };
+    document.addEventListener('contextmenu', preventCtx, { capture: true, passive: false });
+
+    // 2. Block the long-press "selection" behavior on touch devices
+    //    - `touchstart` starts a timer; if it fires → cancel
+    //    - `touchmove` / `touchend` / `touchcancel` clears the timer
+    let longPressTimer = null;
+    const LONG_PRESS_DELAY = 500; // ms
+
+    const clearLongPress = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+
+    document.addEventListener('touchstart', (e) => {
+        // ignore multi-finger gestures (pinch/zoom)
+        if (e.touches.length !== 1) return;
+
+        longPressTimer = setTimeout(() => {
+            // long-press detected → cancel any default action
+            e.preventDefault();
+            longPressTimer = null;
+        }, LONG_PRESS_DELAY);
+    }, { capture: true, passive: false });
+
+    ['touchend', 'touchmove', 'touchcancel'].forEach(evt => {
+        document.addEventListener(evt, clearLongPress, { capture: true, passive: true });
+    });
+
+    // 3. Also suppress the native selection UI that appears on long-press
+    const style = document.createElement('style');
+    style.textContent = `
+        * {
+            -webkit-touch-callout: none !important;   /* iOS Safari */
+            -webkit-user-select: none !important;     /* disable text selection */
+            -khtml-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+        }
+        /* Re-enable selection only for the virtual keyboard input fields */
+        input[type=text], input[type=password], textarea {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+        }
+    `;
+    document.head.appendChild(style);
+})();
