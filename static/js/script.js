@@ -253,7 +253,8 @@ const states = {
                     <button class="bar-btn" onclick="shutdown()"><span class="material-icons">power_settings_new</span><span>Shutdown</span></button>
                 </div>
             </div> 
-        </div>`;
+        </div>
+        <div id="screensaver"></div>`;
     }
 };
 
@@ -769,3 +770,30 @@ async function init() {
     } catch { currentState = 'welcome'; render(); }
 }
 init();
+
+
+// ==============================================================
+// SCREENSAVER FUNCTIONALITY
+// ==============================================================
+
+let screensaverTimeout;
+
+// function to show the screensaver
+function showScreensaver() {
+    document.getElementById("screensaver").style.display = "block";
+}
+
+// reset timer on user activity
+function resetScreensaverTimer() {
+    clearTimeout(screensaverTimeout);
+    document.getElementById("screensaver").style.display = "none";
+    screensaverTimeout = setTimeout(showScreensaver, 5000); // 5 seconds
+}
+
+// attach events to detect activity
+['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetScreensaverTimer);
+});
+
+// start initial timer
+resetScreensaverTimer();
