@@ -780,15 +780,17 @@ let screensaverTimeout;
 
 // function to show the screensaver
 function showScreensaver() {
-    document.getElementById("screensaver").style.display = "block";
+    const saver = document.getElementById("screensaver");
+    saver.classList.add("active");
 }
 
-// reset timer on user activity
 function resetScreensaverTimer() {
     clearTimeout(screensaverTimeout);
-    document.getElementById("screensaver").style.display = "none";
-    screensaverTimeout = setTimeout(showScreensaver, 5000); // 5 seconds
+    const saver = document.getElementById("screensaver");
+    saver.classList.remove("active");
+    screensaverTimeout = setTimeout(showScreensaver, 5000);
 }
+
 
 // attach events to detect activity
 ['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
