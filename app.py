@@ -443,9 +443,12 @@ def toggle_member_status():
 
     try:
         data = load_members_data()
-        if 0 <= index < len(data["members"]):
-            member = data["members"][index]
-            member["active"] = not member.get("active", True)
+        members = data.get("members", [])
+
+        if 0 <= index < len(members):
+            member = members[index]
+            # Ensure 'active' key always exists before toggling
+            member["active"] = not member.get("active", False)
             save_members_data(data)
             publish_member_event()
             return jsonify({"success": True, "member": member}), 200
@@ -453,6 +456,7 @@ def toggle_member_status():
             return jsonify({"success": False, "error": "Index out of range"}), 400
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
 
 
 @app.route("/api/finalize", methods=["POST"])
@@ -465,7 +469,12 @@ def finalize():
         url = f"{MEMBERS_URL}?meterid={METER_ID}&hhid={hhid}"
         resp = requests.get(url, timeout=30)
         data = resp.json()
+
         if data.get("success"):
+            # Add 'active': False to each member if missing
+            for member in data.get("members", []):
+                member.setdefault("active", False)
+
             save_members_data(data)
             set_installation_done()
             return jsonify({"success": True, "data": data}), 200
@@ -478,6 +487,7 @@ def finalize():
     except Exception as e:
         set_installation_done()
         return jsonify({"success": False, "error": str(e)}), 500
+
     
 # === SHUTDOWN ===
 @app.route("/api/shutdown", methods=["POST"])
