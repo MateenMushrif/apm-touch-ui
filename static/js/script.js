@@ -13,6 +13,15 @@ let membersData = null;
 let activeInput = null;        // <input> that has focus
 let shiftActive = false;
 
+// const style = document.createElement('style');
+// style.textContent = `
+//   #screensaver:focus {
+//     outline: none !important;
+//   }
+// `;
+// document.head.appendChild(style);
+
+
 /* ==============================================================
    STEPS (for progress bar)
    ============================================================== */
@@ -799,10 +808,12 @@ if (!saver) {
         userSelect: 'none',
         margin: '0',
         padding: '0',
+        color: 'white',
         gap: '10px',
         opacity: '0',
         transition: 'opacity 1s ease', // <— smooth fade animation
         visibility: 'hidden',
+        outline: 'none',
     });
 
     saver.tabIndex = -1;
