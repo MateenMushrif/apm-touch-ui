@@ -234,7 +234,8 @@ const states = {
         };
 
         return `
-            <div class="main-dashboard">
+        <div class="layout-reset">
+            <div class="main-dashboard fixed-layout">
                 <div class="members-grid">
                     ${shown.map((m, i) => `
                         <div class="member-card-grid ${m.active === false ? 'inactive' : 'active'}"
@@ -251,7 +252,8 @@ const states = {
                     <button class="bar-btn" onclick="restart()"><span class="material-icons">restart_alt</span><span>Reboot</span></button>
                     <button class="bar-btn" onclick="shutdown()"><span class="material-icons">power_settings_new</span><span>Shutdown</span></button>
                 </div>
-            </div>`;
+            </div> 
+        </div>`;
     }
 };
 

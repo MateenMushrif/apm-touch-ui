@@ -42,7 +42,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    /* padding: 1rem; */
     overflow-x: hidden;
 }
 
@@ -371,7 +371,7 @@ ul li {
     margin: 0;
     padding: 0;
     width: 100vw;
-    height: 100vh;
+    height: 80vh;
     overflow: hidden;
     background: hsl(var(--background));
     display: flex;
@@ -719,12 +719,12 @@ ul li {
 /* ═══════════════════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════ */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .members-grid {
         grid-template-columns: repeat(2, 1fr);
         grid-template-rows: repeat(4, 1fr);
     }
-}
+} */
 
 @media (max-width: 640px) {
     h1 {
