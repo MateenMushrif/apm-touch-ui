@@ -587,6 +587,7 @@ class BrowserWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.browser = QWebEngineView()
         self.setCentralWidget(self.browser)
+        self.setCursor(Qt.BlankCursor)
         self.showFullScreen()
 
         self.browser.setZoomFactor(1.0)
@@ -596,6 +597,7 @@ class BrowserWindow(QtWidgets.QMainWindow):
 
         self.browser.setAttribute(Qt.WA_AcceptTouchEvents, False)
         self.setAttribute(Qt.WA_AcceptTouchEvents, False)
+
 
         ZOOM_PREVENT_JS = """
         (function(){
