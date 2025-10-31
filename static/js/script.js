@@ -776,62 +776,54 @@ init();
 // SCREENSAVER FUNCTIONALITY
 // ==============================================================
 
-// ---------------------- Screensaver (Raspberry-proof) ----------------------
-// Ensure only one screensaver exists
+// -------------------- Raspberry-proof screensaver (fixed) --------------------
 let saver = document.getElementById('screensaver');
 if (!saver) {
     saver = document.createElement('div');
     saver.id = 'screensaver';
-    // Inline styles to avoid weird CSS cascade or kiosk quirks
     Object.assign(saver.style, {
-        display: 'none',           // shown/hidden by JS
+        display: 'none',
         position: 'fixed',
         left: '0',
         top: '0',
         width: '100%',
         height: '100%',
         background: 'black',
-        zIndex: '2147483647',      // huge z-index to beat everything
-        pointerEvents: 'all',      // absorb pointer events
-        touchAction: 'none',       // prevent gesture propagation
+        zIndex: '2147483647',
+        pointerEvents: 'all',
+        touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
     });
-
-    // Make it focusable so it can catch keyboard events
     saver.tabIndex = -1;
-
     document.body.appendChild(saver);
 }
 
-// timer handle
 let screensaverTimeout;
-
-// show / hide
 function showScreensaver() {
     saver.style.display = 'block';
-    // ensure it's focused so keyboard events go to it
     try { saver.focus({ preventScroll: true }); } catch (e) { }
 }
-
 function hideScreensaver() {
     saver.style.display = 'none';
-    // blur so underlying elements can be focused again
     try { saver.blur(); } catch (e) { }
 }
-
-// reset timer (call this on user activity)
 function resetScreensaverTimer() {
     clearTimeout(screensaverTimeout);
     hideScreensaver();
-    // 5000ms = 5 seconds
     screensaverTimeout = setTimeout(showScreensaver, 5000);
 }
+resetScreensaverTimer();
 
-// Prevent any events from reaching background when saver visible.
-// Use capture phase and stopImmediatePropagation to be extra-sure.
+// IMPORTANT: allow events whose target is the saver (or a descendant) to reach the saver.
+// Block others while saver is visible.
+function shouldLetEventThroughToSaver(e) {
+    // event.target could be a child element; allow if saver contains the target
+    return saver.contains(e.target);
+}
+
 function blockEventIfActive(e) {
-    if (saver.style.display !== 'none') {
+    if (saver.style.display !== 'none' && !shouldLetEventThroughToSaver(e)) {
         e.preventDefault();
         e.stopImmediatePropagation();
         e.stopPropagation();
@@ -840,37 +832,25 @@ function blockEventIfActive(e) {
     return false;
 }
 
-// Attach capture-phase listeners on window/document to block all input
+// Capture-phase listeners that block events except those aimed at the saver itself.
+// Passive=false so we can preventDefault on touch/pointer events.
 ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'touchend', 'keydown', 'keyup', 'keypress'].forEach(evt => {
-    // capture: true — intercept before page handlers
     document.addEventListener(evt, (e) => {
         blockEventIfActive(e);
     }, { capture: true, passive: false });
 });
 
-// Also ensure clicks/taps on the saver itself dismiss it but don't let them pass through
-saver.addEventListener('click', (e) => {
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    hideScreensaver();
-    resetScreensaverTimer();
-}, { capture: true });
-
-// If saver visible and someone touches/moves pointer we dismiss and reset timer
-['pointermove', 'mousemove', 'touchmove', 'touchstart'].forEach(evt => {
+// Saver itself: dismiss on click/touch/move. Stop propagation so nothing slips through.
+['click', 'pointerdown', 'touchstart', 'pointermove', 'mousemove'].forEach(evt => {
     saver.addEventListener(evt, (ev) => {
         ev.stopImmediatePropagation();
         ev.preventDefault();
         hideScreensaver();
         resetScreensaverTimer();
-    }, { passive: false, capture: true });
+    }, { capture: true, passive: false });
 });
 
-// Attach activity listeners to the whole document to reset the idle timer.
-// These do not run in capture-phase (not necessary), they just reset the timer.
+// Activity listeners to reset idle timer when saver is hidden
 ['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
     document.addEventListener(evt, resetScreensaverTimer, { passive: true });
 });
-
-// Initialize
-resetScreensaverTimer();
