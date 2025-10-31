@@ -777,18 +777,3 @@ ul li {
 
 
 /* SCREEN SAVER */
-#screensaver {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: black;
-    z-index: 9999;
-    pointer-events: none;
-    /* by default, it ignores clicks */
-}
-
-#screensaver.active {
-    display: block;
-    pointer-events: all;
-    /* now it blocks interaction */
-}

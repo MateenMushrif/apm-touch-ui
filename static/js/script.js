@@ -776,26 +776,44 @@ init();
 // SCREENSAVER FUNCTIONALITY
 // ==============================================================
 
+// Create screensaver element if not already present
+let saver = document.getElementById('screensaver');
+if (!saver) {
+    saver = document.createElement('div');
+    saver.id = 'screensaver';
+    saver.style.display = 'none';
+    saver.style.position = 'fixed';
+    saver.style.inset = '0';
+    saver.style.background = 'black';
+    saver.style.zIndex = '99999';
+    saver.style.pointerEvents = 'auto'; // force block clicks
+    document.body.appendChild(saver);
+}
+
+// Functions
 let screensaverTimeout;
 
-// function to show the screensaver
 function showScreensaver() {
-    const saver = document.getElementById("screensaver");
-    saver.classList.add("active");
+    saver.style.display = 'block';
+}
+
+function hideScreensaver() {
+    saver.style.display = 'none';
 }
 
 function resetScreensaverTimer() {
     clearTimeout(screensaverTimeout);
-    const saver = document.getElementById("screensaver");
-    saver.classList.remove("active");
+    hideScreensaver();
     screensaverTimeout = setTimeout(showScreensaver, 5000);
 }
 
-
-// attach events to detect activity
-['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
-    document.addEventListener(evt, resetScreensaverTimer);
+// Listen for user activity
+['keypress', 'click', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetScreensaverTimer, { passive: true });
 });
 
-// start initial timer
+// Allow click to dismiss screensaver
+saver.addEventListener('click', hideScreensaver);
+
+// Initialize
 resetScreensaverTimer();
