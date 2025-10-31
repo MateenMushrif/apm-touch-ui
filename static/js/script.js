@@ -886,7 +886,7 @@ function hideScreensaver() {
 function resetScreensaverTimer() {
     clearTimeout(screensaverTimeout);
     hideScreensaver();
-    screensaverTimeout = setTimeout(showScreensaver, 3000);
+    screensaverTimeout = setTimeout(showScreensaver, 10000);
 }
 resetScreensaverTimer();
 
