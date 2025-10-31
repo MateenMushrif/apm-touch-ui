@@ -782,48 +782,109 @@ if (!saver) {
     saver = document.createElement('div');
     saver.id = 'screensaver';
     Object.assign(saver.style, {
-        display: 'none',
         position: 'fixed',
         left: '0',
         top: '0',
         width: '100%',
         height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         background: 'black',
         zIndex: '2147483647',
         pointerEvents: 'all',
         touchAction: 'none',
         WebkitUserSelect: 'none',
         userSelect: 'none',
+        margin: '0',
+        padding: '0',
+        gap: '10px',
+        opacity: '0',
+        transition: 'opacity 1s ease', // <— smooth fade animation
+        visibility: 'hidden',
     });
+
     saver.tabIndex = -1;
     document.body.appendChild(saver);
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'clock-wrapper';
+    Object.assign(wrapper.style, {
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+    });
+
+    // time
+    const timeEl = document.createElement('div');
+    timeEl.id = 'clock-time';
+    Object.assign(timeEl.style, {
+        fontSize: '100px',
+        fontWeight: '600',
+        marginBottom: '10px',
+        lineHeight: '1',
+        textAlign: 'center',
+    });
+
+    // date
+    const dateEl = document.createElement('div');
+    dateEl.id = 'clock-date';
+    Object.assign(dateEl.style, {
+        fontSize: '28px',
+        fontWeight: '400',
+        textAlign: 'center',
+    });
+
+    wrapper.appendChild(timeEl);
+    wrapper.appendChild(dateEl);
+    saver.appendChild(wrapper);
 }
 
+// --- Clock update ---
+function updateClock() {
+    const now = new Date();
+    const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const date = now.toLocaleDateString('en-US', options);
+    document.getElementById('clock-time').textContent = time;
+    document.getElementById('clock-date').textContent = date;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
 let screensaverTimeout;
+
 function showScreensaver() {
-    saver.style.display = 'block';
+    saver.style.visibility = 'visible';
+    saver.style.opacity = '1'; // fade in
     try { saver.focus({ preventScroll: true }); } catch (e) { }
 }
+
 function hideScreensaver() {
-    saver.style.display = 'none';
+    saver.style.opacity = '0'; // fade out
+    setTimeout(() => {
+        saver.style.visibility = 'hidden';
+    }, 1000); // matches transition duration
     try { saver.blur(); } catch (e) { }
 }
+
 function resetScreensaverTimer() {
     clearTimeout(screensaverTimeout);
     hideScreensaver();
-    screensaverTimeout = setTimeout(showScreensaver, 10000);
+    screensaverTimeout = setTimeout(showScreensaver, 3000);
 }
 resetScreensaverTimer();
 
-// IMPORTANT: allow events whose target is the saver (or a descendant) to reach the saver.
-// Block others while saver is visible.
+// --- event blocking logic unchanged ---
 function shouldLetEventThroughToSaver(e) {
-    // event.target could be a child element; allow if saver contains the target
     return saver.contains(e.target);
 }
-
 function blockEventIfActive(e) {
-    if (saver.style.display !== 'none' && !shouldLetEventThroughToSaver(e)) {
+    if (saver.style.visibility === 'visible' && saver.style.opacity !== '0' && !shouldLetEventThroughToSaver(e)) {
         e.preventDefault();
         e.stopImmediatePropagation();
         e.stopPropagation();
@@ -831,16 +892,9 @@ function blockEventIfActive(e) {
     }
     return false;
 }
-
-// Capture-phase listeners that block events except those aimed at the saver itself.
-// Passive=false so we can preventDefault on touch/pointer events.
 ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'touchend', 'keydown', 'keyup', 'keypress'].forEach(evt => {
-    document.addEventListener(evt, (e) => {
-        blockEventIfActive(e);
-    }, { capture: true, passive: false });
+    document.addEventListener(evt, (e) => blockEventIfActive(e), { capture: true, passive: false });
 });
-
-// Saver itself: dismiss on click/touch/move. Stop propagation so nothing slips through.
 ['click', 'pointerdown', 'touchstart', 'pointermove', 'mousemove'].forEach(evt => {
     saver.addEventListener(evt, (ev) => {
         ev.stopImmediatePropagation();
@@ -849,8 +903,6 @@ function blockEventIfActive(e) {
         resetScreensaverTimer();
     }, { capture: true, passive: false });
 });
-
-// Activity listeners to reset idle timer when saver is hidden
 ['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
     document.addEventListener(evt, resetScreensaverTimer, { passive: true });
 });
