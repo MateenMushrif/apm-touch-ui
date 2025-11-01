@@ -439,14 +439,17 @@ function render(details = null) {
     if (currentState === 'main') {
         container.innerHTML = html;
         progressBar.style.display = 'none';
+
+        // wait until DOM updates before attaching brightness control
         setTimeout(() => {
             document.querySelectorAll('.member-card-grid').forEach(c => {
                 const bg = c.style.getPropertyValue('--bg-image') || '';
                 if (bg) c.style.setProperty('--card-bg', bg);
             });
+
+            initBrightnessControl(); // <<< run brightness only on main page
         }, 10);
-        // ⬇️ Add this line right here
-        initBrightnessControl();
+
     } else {
         container.innerHTML = `
             <div class="container"><div class="card">
@@ -650,9 +653,7 @@ async function navigate(state, param = null) {
         render();
         // ---- START SCREENSAVER TIMER ONLY ON MAIN ----
         setTimeout(() => {
-            if (currentState === 'main') {
-                resetScreensaverTimer()
-            };
+            if (currentState === 'main') resetScreensaverTimer();
         }, 100);
         return;   // <-- important: stop further execution
     }
@@ -1016,51 +1017,49 @@ function blockEventIfActive(e) {
 });
 
 function initBrightnessControl() {
+    if (document.getElementById('brightness-container')) return; // don’t spawn duplicates
+
     const maxBrightness = 255;
     const step = 51;
     const minBrightness = 0;
-    let currentBrightness = 153; // start mid-level
+    let currentBrightness = 153;
 
-    // --- Create slider UI ---
     const container = document.createElement('div');
     container.id = 'brightness-container';
-    container.style.position = 'fixed';
-    container.style.bottom = '2rem';
-    container.style.left = '50%';
-    container.style.transform = 'translateX(-50%)';
-    container.style.padding = '1rem';
-    container.style.background = 'hsl(var(--card))';
-    container.style.border = '1px solid hsl(var(--border))';
-    container.style.borderRadius = 'var(--radius)';
-    container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-    container.style.zIndex = '9999';
+    Object.assign(container.style, {
+        position: 'fixed',
+        bottom: '2rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        padding: '1rem',
+        background: 'hsl(var(--card))',
+        border: '1px solid hsl(var(--border))',
+        borderRadius: 'var(--radius)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        zIndex: '9999'
+    });
+
     container.innerHTML = `
-        <label for="brightness-slider" style="display:block;margin-bottom:.5rem;">
-          ☀ Brightness
-        </label>
-        <input type="range" id="brightness-slider"
-               min="${minBrightness}"
-               max="${maxBrightness}"
-               step="${step}"
-               value="${currentBrightness}"
-               style="width:300px;">
-        <div id="brightness-value" style="margin-top:.3rem;text-align:center;font-size:0.875rem;">
-          ${currentBrightness}/255
-        </div>
+      <label for="brightness-slider" style="display:block;margin-bottom:.5rem;">☀ Brightness</label>
+      <input type="range" id="brightness-slider"
+             min="${minBrightness}" max="${maxBrightness}" step="${step}"
+             value="${currentBrightness}" style="width:300px;">
+      <div id="brightness-value" style="margin-top:.3rem;text-align:center;font-size:0.875rem;">
+        ${currentBrightness}/255
+      </div>
     `;
+
     document.body.appendChild(container);
 
-    // --- Handle slider change ---
-    const slider = document.getElementById('brightness-slider');
-    const valueLabel = document.getElementById('brightness-value');
+    const slider = container.querySelector('#brightness-slider');
+    const valueLabel = container.querySelector('#brightness-value');
 
-    slider.addEventListener("input", async (e) => {
+    slider.addEventListener("input", async e => {
         currentBrightness = parseInt(e.target.value);
         valueLabel.textContent = `${currentBrightness}/255`;
         await updateBrightness(currentBrightness);
     });
 
-    // --- API call to Flask backend ---
     async function updateBrightness(value) {
         try {
             const res = await fetch('/api/brightness', {
@@ -1076,9 +1075,6 @@ function initBrightnessControl() {
         }
     }
 }
-
-// Call this manually when you want it to appear:
-// initBrightnessControl();
 
 /* ==============================================================
    INITIALISATION
