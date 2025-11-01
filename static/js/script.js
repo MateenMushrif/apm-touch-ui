@@ -648,7 +648,9 @@ async function navigate(state, param = null) {
         render();
         // ---- START SCREENSAVER TIMER ONLY ON MAIN ----
         setTimeout(() => {
-            if (currentState === 'main') resetScreensaverTimer();
+            if (currentState === 'main') {
+                resetScreensaverTimer()
+            };
         }, 100);
         return;   // <-- important: stop further execution
     }
@@ -887,6 +889,8 @@ let preDimTimeout;
 let originalBrightness = 153; // Track original brightness
 let isDimmed = false;
 
+initBrightnessControl()
+
 function showScreensaver() {
     saver.style.visibility = "visible";
     saver.style.opacity = "1"; // fade in
@@ -1011,7 +1015,7 @@ function blockEventIfActive(e) {
     }, { passive: true });
 });
 
-if (currentState === 'main') {
+function initBrightnessControl() {
     const maxBrightness = 255;
     const step = 51;
     const minBrightness = 0;
@@ -1031,19 +1035,19 @@ if (currentState === 'main') {
     container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
     container.style.zIndex = '9999';
     container.innerHTML = `
-    <label for="brightness-slider" style="display:block;margin-bottom:.5rem;">
-      ☀ Brightness
-    </label>
-    <input type="range" id="brightness-slider"
-           min="${minBrightness}"
-           max="${maxBrightness}"
-           step="${step}"
-           value="${currentBrightness}"
-           style="width:300px;">
-    <div id="brightness-value" style="margin-top:.3rem;text-align:center;font-size:0.875rem;">
-      ${currentBrightness}/255
-    </div>
-  `;
+        <label for="brightness-slider" style="display:block;margin-bottom:.5rem;">
+          ☀ Brightness
+        </label>
+        <input type="range" id="brightness-slider"
+               min="${minBrightness}"
+               max="${maxBrightness}"
+               step="${step}"
+               value="${currentBrightness}"
+               style="width:300px;">
+        <div id="brightness-value" style="margin-top:.3rem;text-align:center;font-size:0.875rem;">
+          ${currentBrightness}/255
+        </div>
+    `;
     document.body.appendChild(container);
 
     // --- Handle slider change ---
@@ -1052,7 +1056,6 @@ if (currentState === 'main') {
 
     slider.addEventListener("input", async (e) => {
         currentBrightness = parseInt(e.target.value);
-        originalBrightness = currentBrightness; // Update original when user changes
         valueLabel.textContent = `${currentBrightness}/255`;
         await updateBrightness(currentBrightness);
     });
@@ -1072,7 +1075,11 @@ if (currentState === 'main') {
             console.error('Brightness update error:', err);
         }
     }
-};
+}
+
+// Call this manually when you want it to appear:
+// initBrightnessControl();
+
 /* ==============================================================
    INITIALISATION
    ============================================================== */
