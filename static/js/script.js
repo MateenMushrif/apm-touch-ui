@@ -1017,6 +1017,7 @@ function blockEventIfActive(e) {
 });
 
 function initBrightnessControl() {
+    resetScreensaverTimer()
     if (document.getElementById('brightness-container')) return; // don’t spawn duplicates
 
     const maxBrightness = 255;
