@@ -883,26 +883,101 @@ setInterval(updateClock, 1000);
 updateClock();
 
 let screensaverTimeout;
+let preDimTimeout;
+let originalBrightness = 153; // Track original brightness
+let isDimmed = false;
 
 function showScreensaver() {
-    saver.style.visibility = 'visible';
-    saver.style.opacity = '1'; // fade in
-    try { saver.focus({ preventScroll: true }); } catch (e) { }
+    saver.style.visibility = "visible";
+    saver.style.opacity = "1"; // fade in
+    try {
+        saver.focus({ preventScroll: true });
+    } catch (e) { }
 }
 
 function hideScreensaver() {
-    saver.style.opacity = '0'; // fade out
+    saver.style.opacity = "0"; // fade out
     setTimeout(() => {
-        saver.style.visibility = 'hidden';
+        saver.style.visibility = "hidden";
     }, 1000); // matches transition duration
-    try { saver.blur(); } catch (e) { }
+    try {
+        saver.blur();
+    } catch (e) { }
 }
+
+// --- Pre-dim brightness logic ---
+async function preDimBrightness() {
+    const slider = document.getElementById("brightness-slider");
+    if (!slider) return;
+
+    originalBrightness = parseInt(slider.value);
+
+    // Only dim if brightness is above 51
+    if (originalBrightness > 51) {
+        let dimmedValue;
+
+        if (originalBrightness === 102) {
+            dimmedValue = 60;
+        } else if (originalBrightness > 102) {
+            dimmedValue = 127;
+        } else {
+            return; // No dimming needed for 51
+        }
+
+        isDimmed = true;
+        slider.value = dimmedValue;
+        const valueLabel = document.getElementById("brightness-value");
+        if (valueLabel) valueLabel.textContent = `${dimmedValue}/255`;
+
+        // Send to backend
+        await updateBrightnessAPI(dimmedValue);
+        console.log(`[PRE - DIM] ${originalBrightness} → ${dimmedValue}`);
+    }
+}
+
+async function restoreBrightness() {
+    if (!isDimmed) return;
+
+    const slider = document.getElementById("brightness-slider");
+    if (!slider) return;
+
+    isDimmed = false;
+    slider.value = originalBrightness;
+    const valueLabel = document.getElementById("brightness-value");
+    if (valueLabel) valueLabel.textContent = `${originalBrightness}/255`;
+
+    // Send to backend
+    await updateBrightnessAPI(originalBrightness);
+    console.log(`[RESTORE] ${originalBrightness}`);
+}
+
+async function updateBrightnessAPI(value) {
+    try {
+        await fetch("/api/brightness", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ brightness: value }),
+        });
+    } catch (err) {
+        console.error("Brightness update error:", err);
+    }
+}
+
+// --- Screensaver with pre-dim at 20s (30s - 10s) ---
 
 function resetScreensaverTimer() {
     clearTimeout(screensaverTimeout);
+    clearTimeout(preDimTimeout);
     hideScreensaver();
-    screensaverTimeout = setTimeout(showScreensaver, 10000);
+    restoreBrightness();
+
+    // Pre-dim at 20 seconds (10 seconds before screensaver)
+    preDimTimeout = setTimeout(preDimBrightness, 20000);
+
+    // Show screensaver at 30 seconds
+    screensaverTimeout = setTimeout(showScreensaver, 30000);
 }
+
 // Start screensaver timer ONLY when on the main dashboard
 // if (currentState === 'main') resetScreensaverTimer();
 
@@ -936,6 +1011,69 @@ function blockEventIfActive(e) {
     }, { passive: true });
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+    const maxBrightness = 255;
+    const step = 51;
+    const minBrightness = 0;
+    let currentBrightness = 153; // start mid-level
+
+    // --- Create slider UI ---
+    const container = document.createElement('div');
+    container.id = 'brightness-container';
+    container.style.position = 'fixed';
+    container.style.bottom = '2rem';
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';
+    container.style.padding = '1rem';
+    container.style.background = 'hsl(var(--card))';
+    container.style.border = '1px solid hsl(var(--border))';
+    container.style.borderRadius = 'var(--radius)';
+    container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+    container.style.zIndex = '9999';
+    container.innerHTML = `
+    <label for="brightness-slider" style="display:block;margin-bottom:.5rem;">
+      ☀ Brightness
+    </label>
+    <input type="range" id="brightness-slider"
+           min="${minBrightness}"
+           max="${maxBrightness}"
+           step="${step}"
+           value="${currentBrightness}"
+           style="width:300px;">
+    <div id="brightness-value" style="margin-top:.3rem;text-align:center;font-size:0.875rem;">
+      ${currentBrightness}/255
+    </div>
+  `;
+    document.body.appendChild(container);
+
+    // --- Handle slider change ---
+    const slider = document.getElementById('brightness-slider');
+    const valueLabel = document.getElementById('brightness-value');
+
+    slider.addEventListener("input", async (e) => {
+        currentBrightness = parseInt(e.target.value);
+        originalBrightness = currentBrightness; // Update original when user changes
+        valueLabel.textContent = `${currentBrightness}/255`;
+        await updateBrightness(currentBrightness);
+    });
+
+    // --- API call to Flask backend ---
+    async function updateBrightness(value) {
+        try {
+            const res = await fetch('/api/brightness', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brightness: value })
+            });
+            const data = await res.json();
+            if (!data.success) console.warn('Brightness update failed:', data.error);
+            else console.log(`Brightness set to ${value}`);
+        } catch (err) {
+            console.error('Brightness update error:', err);
+        }
+    }
+
+});
 /* ==============================================================
    INITIALISATION
    ============================================================== */
