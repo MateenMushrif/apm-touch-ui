@@ -572,6 +572,32 @@ def close_application():
     return "Closing..."
 
 
+@app.route("/api/brightness", methods=["POST"])
+def set_brightness():
+    """
+    Adjust display brightness via /sys/class/backlight/10-0045.
+    Expects JSON: { "brightness": <51–255> }
+    """
+    try:
+        data = request.get_json()
+        brightness = int(data.get("brightness", 51))
+        path = "/sys/class/backlight/1-0045"
+
+        # Get maximum brightness
+        with open(f"{path}/max_brightness") as f:
+            max_brightness = int(f.read().strip())
+
+        # Clamp value and write it
+        brightness = max(51, min(brightness, max_brightness))
+        os.system(f"echo {brightness} | sudo tee {path}/brightness > /dev/null")
+
+        print(f"[BRIGHTNESS] Set to {brightness}")
+        return jsonify({"success": True, "brightness": brightness}), 200
+    except Exception as e:
+        print(f"[BRIGHTNESS] Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # ----------------------------------------------------------------------
 # 8. Flask runner
 # ----------------------------------------------------------------------
