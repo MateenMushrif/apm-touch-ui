@@ -1007,30 +1007,28 @@ function blockEventIfActive(e) {
 });
 ['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
     document.addEventListener(evt, () => {
-        if (currentState === 'main') resetScreensaverTimer();
-    }, { passive: true });
-});
+        if (currentState === 'main') {
+            resetScreensaverTimer()
+            document.addEventListener("DOMContentLoaded", () => {
+                const maxBrightness = 255;
+                const step = 51;
+                const minBrightness = 0;
+                let currentBrightness = 153; // start mid-level
 
-document.addEventListener("DOMContentLoaded", () => {
-    const maxBrightness = 255;
-    const step = 51;
-    const minBrightness = 0;
-    let currentBrightness = 153; // start mid-level
-
-    // --- Create slider UI ---
-    const container = document.createElement('div');
-    container.id = 'brightness-container';
-    container.style.position = 'fixed';
-    container.style.bottom = '2rem';
-    container.style.left = '50%';
-    container.style.transform = 'translateX(-50%)';
-    container.style.padding = '1rem';
-    container.style.background = 'hsl(var(--card))';
-    container.style.border = '1px solid hsl(var(--border))';
-    container.style.borderRadius = 'var(--radius)';
-    container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-    container.style.zIndex = '9999';
-    container.innerHTML = `
+                // --- Create slider UI ---
+                const container = document.createElement('div');
+                container.id = 'brightness-container';
+                container.style.position = 'fixed';
+                container.style.bottom = '2rem';
+                container.style.left = '50%';
+                container.style.transform = 'translateX(-50%)';
+                container.style.padding = '1rem';
+                container.style.background = 'hsl(var(--card))';
+                container.style.border = '1px solid hsl(var(--border))';
+                container.style.borderRadius = 'var(--radius)';
+                container.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+                container.style.zIndex = '9999';
+                container.innerHTML = `
     <label for="brightness-slider" style="display:block;margin-bottom:.5rem;">
       ☀ Brightness
     </label>
@@ -1044,36 +1042,40 @@ document.addEventListener("DOMContentLoaded", () => {
       ${currentBrightness}/255
     </div>
   `;
-    document.body.appendChild(container);
+                document.body.appendChild(container);
 
-    // --- Handle slider change ---
-    const slider = document.getElementById('brightness-slider');
-    const valueLabel = document.getElementById('brightness-value');
+                // --- Handle slider change ---
+                const slider = document.getElementById('brightness-slider');
+                const valueLabel = document.getElementById('brightness-value');
 
-    slider.addEventListener("input", async (e) => {
-        currentBrightness = parseInt(e.target.value);
-        originalBrightness = currentBrightness; // Update original when user changes
-        valueLabel.textContent = `${currentBrightness}/255`;
-        await updateBrightness(currentBrightness);
-    });
+                slider.addEventListener("input", async (e) => {
+                    currentBrightness = parseInt(e.target.value);
+                    originalBrightness = currentBrightness; // Update original when user changes
+                    valueLabel.textContent = `${currentBrightness}/255`;
+                    await updateBrightness(currentBrightness);
+                });
 
-    // --- API call to Flask backend ---
-    async function updateBrightness(value) {
-        try {
-            const res = await fetch('/api/brightness', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ brightness: value })
+                // --- API call to Flask backend ---
+                async function updateBrightness(value) {
+                    try {
+                        const res = await fetch('/api/brightness', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ brightness: value })
+                        });
+                        const data = await res.json();
+                        if (!data.success) console.warn('Brightness update failed:', data.error);
+                        else console.log(`Brightness set to ${value}`);
+                    } catch (err) {
+                        console.error('Brightness update error:', err);
+                    }
+                }
+
             });
-            const data = await res.json();
-            if (!data.success) console.warn('Brightness update failed:', data.error);
-            else console.log(`Brightness set to ${value}`);
-        } catch (err) {
-            console.error('Brightness update error:', err);
-        }
-    }
-
+        };
+    }, { passive: true });
 });
+
 /* ==============================================================
    INITIALISATION
    ============================================================== */
