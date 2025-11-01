@@ -48,12 +48,6 @@ const keyboardLayouts = {
     ]
 };
 
-const settings = {
-    wifi: <button class="bar-btn" onclick="showWiFiPopup()"><span class="material-icons">wifi</span><span>Wi-Fi</span></button>,
-    reboot: <button class="bar-btn" onclick="restart()"><span class="material-icons">restart_alt</span><span>Reboot</span></button>,
-    shutdown: <button class="bar-btn" onclick="shutdown()"><span class="material-icons">power_settings_new</span><span>Shutdown</span></button>
-};
-
 /* ==============================================================
    HTML TEMPLATES (states)
    ============================================================== */
@@ -558,6 +552,39 @@ function closeWiFiPopup() {
     ['wifi-popup', 'wifi-overlay'].forEach(id => { const el = document.getElementById(id); if (el) el.remove(); });
     render();
 }
+
+
+// function showSettingsPopup() {
+//     if (document.getElementById('settings-popup')) {
+//         closeSettingsPopup()
+//         return; // already open
+//     };
+//     const overlay = document.createElement('div');
+//     overlay.id = 'settings-overlay';
+//     overlay.className = 'overlay';
+//     const popup = document.createElement('div');
+//     popup.id = 'settings-popup';
+//     popup.className = 'popup';
+//     popup.innerHTML = `
+//         <h2>Settings</h2>
+//         <div id="settings-content">
+//             <h3>Wi-Fi</h3>
+//             <button class="button" onclick="showWiFiPopup()">Configure Wi-Fi</button>
+//             <h3>System</h3>
+//             <button class="button" onclick="restart()">Reboot</button>
+//             <button class="button" onclick="shutdown()">Shutdown</button>
+//         </div>
+//         <button class="button secondary" onclick="closeSettingsPopup()">Close</button>
+//     `;
+//     document.body.append(overlay, popup);
+// }
+
+// function closeSettingsPopup() {
+//     const overlay = document.getElementById('settings-overlay');
+//     const popup = document.getElementById('settings-popup');
+//     if (overlay) overlay.remove();
+//     if (popup) popup.remove();
+// }
 
 /* ==============================================================
    NAVIGATION (with API calls)
