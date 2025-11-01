@@ -13,14 +13,6 @@ let membersData = null;
 let activeInput = null;        // <input> that has focus
 let shiftActive = false;
 
-// const style = document.createElement('style');
-// style.textContent = `
-//   #screensaver:focus {
-//     outline: none !important;
-//   }
-// `;
-// document.head.appendChild(style);
-
 
 /* ==============================================================
    STEPS (for progress bar)
@@ -54,6 +46,12 @@ const keyboardLayouts = {
         ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
         ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
     ]
+};
+
+const settings = {
+    wifi: <button class="bar-btn" onclick="showWiFiPopup()"><span class="material-icons">wifi</span><span>Wi-Fi</span></button>,
+    reboot: <button class="bar-btn" onclick="restart()"><span class="material-icons">restart_alt</span><span>Reboot</span></button>,
+    shutdown: <button class="bar-btn" onclick="shutdown()"><span class="material-icons">power_settings_new</span><span>Shutdown</span></button>
 };
 
 /* ==============================================================
@@ -621,7 +619,16 @@ async function navigate(state, param = null) {
     }
 
     /* ---------- MAIN DASHBOARD ---------- */
-    if (state === 'main') await fetchMembers();
+    /* ---------- MAIN DASHBOARD ---------- */
+    if (state === 'main') {
+        await fetchMembers();
+        render();
+        // ---- START SCREENSAVER TIMER ONLY ON MAIN ----
+        setTimeout(() => {
+            if (currentState === 'main') resetScreensaverTimer();
+        }, 100);
+        return;   // <-- important: stop further execution
+    }
     render();
 }
 
@@ -765,21 +772,6 @@ async function restart() {
     catch { alert('Restart failed'); }
 }
 
-/* ==============================================================
-   INITIALISATION
-   ============================================================== */
-async function init() {
-    try {
-        const r = await fetch('/api/check_installation');
-        const d = await r.json();
-        meterId = d.meter_id;
-        currentState = d.installed ? 'main' : 'welcome';
-        if (d.installed) await fetchMembers();
-        render();
-    } catch { currentState = 'welcome'; render(); }
-}
-init();
-
 
 // ==============================================================
 // SCREENSAVER FUNCTIONALITY
@@ -888,7 +880,8 @@ function resetScreensaverTimer() {
     hideScreensaver();
     screensaverTimeout = setTimeout(showScreensaver, 10000);
 }
-resetScreensaverTimer();
+// Start screensaver timer ONLY when on the main dashboard
+// if (currentState === 'main') resetScreensaverTimer();
 
 // --- event blocking logic unchanged ---
 function shouldLetEventThroughToSaver(e) {
@@ -915,65 +908,22 @@ function blockEventIfActive(e) {
     }, { capture: true, passive: false });
 });
 ['mousemove', 'keypress', 'click', 'touchstart'].forEach(evt => {
-    document.addEventListener(evt, resetScreensaverTimer, { passive: true });
+    document.addEventListener(evt, () => {
+        if (currentState === 'main') resetScreensaverTimer();
+    }, { passive: true });
 });
 
-
 /* ==============================================================
-   DISABLE LONG-PRESS & RIGHT-CLICK (GLOBAL)
+   INITIALISATION
    ============================================================== */
-(() => {
-    // 1. Prevent the default context menu (right-click or long-press)
-    const preventCtx = (e) => {
-        e.preventDefault();
-        return false;
-    };
-    document.addEventListener('contextmenu', preventCtx, { capture: true, passive: false });
-
-    // 2. Block the long-press "selection" behavior on touch devices
-    //    - `touchstart` starts a timer; if it fires → cancel
-    //    - `touchmove` / `touchend` / `touchcancel` clears the timer
-    let longPressTimer = null;
-    const LONG_PRESS_DELAY = 500; // ms
-
-    const clearLongPress = () => {
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-        }
-    };
-
-    document.addEventListener('touchstart', (e) => {
-        // ignore multi-finger gestures (pinch/zoom)
-        if (e.touches.length !== 1) return;
-
-        longPressTimer = setTimeout(() => {
-            // long-press detected → cancel any default action
-            e.preventDefault();
-            longPressTimer = null;
-        }, LONG_PRESS_DELAY);
-    }, { capture: true, passive: false });
-
-    ['touchend', 'touchmove', 'touchcancel'].forEach(evt => {
-        document.addEventListener(evt, clearLongPress, { capture: true, passive: true });
-    });
-
-    // 3. Also suppress the native selection UI that appears on long-press
-    const style = document.createElement('style');
-    style.textContent = `
-        * {
-            -webkit-touch-callout: none !important;   /* iOS Safari */
-            -webkit-user-select: none !important;     /* disable text selection */
-            -khtml-user-select: none !important;
-            -moz-user-select: none !important;
-            -ms-user-select: none !important;
-            user-select: none !important;
-        }
-        /* Re-enable selection only for the virtual keyboard input fields */
-        input[type=text], input[type=password], textarea {
-            -webkit-user-select: text !important;
-            user-select: text !important;
-        }
-    `;
-    document.head.appendChild(style);
-})();
+async function init() {
+    try {
+        const r = await fetch('/api/check_installation');
+        const d = await r.json();
+        meterId = d.meter_id;
+        currentState = d.installed ? 'main' : 'welcome';
+        if (d.installed) await fetchMembers();
+        render();
+    } catch { currentState = 'welcome'; render(); }
+}
+init();
