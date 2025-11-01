@@ -1014,7 +1014,7 @@ function blockEventIfActive(e) {
 document.addEventListener("DOMContentLoaded", () => {
     const maxBrightness = 255;
     const step = 51;
-    const minBrightness = 51;
+    const minBrightness = 0;
     let currentBrightness = 153; // start mid-level
 
     // --- Create slider UI ---
