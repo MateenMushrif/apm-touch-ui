@@ -445,6 +445,8 @@ function render(details = null) {
                 if (bg) c.style.setProperty('--card-bg', bg);
             });
         }, 10);
+        // ⬇️ Add this line right here
+        initBrightnessControl();
     } else {
         container.innerHTML = `
             <div class="container"><div class="card">
@@ -888,8 +890,6 @@ let screensaverTimeout;
 let preDimTimeout;
 let originalBrightness = 153; // Track original brightness
 let isDimmed = false;
-
-initBrightnessControl()
 
 function showScreensaver() {
     saver.style.visibility = "visible";
